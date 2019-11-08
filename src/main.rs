@@ -2,35 +2,27 @@ mod objects;
 mod ray;
 mod vector;
 
-fn hit_sphere(center: vector::Vector, radius: f64, ray: &ray::Ray) -> f64 {
-    let oc = ray.origin - center;
+fn color(r: &ray::Ray, world: &objects::Object) -> vector::Vector {
+    let hit = world.hit(r, 0.0, std::f64::MAX);
 
-    let a: f64 = vector::Vector::dot(&ray.direction, &ray.direction);
-    let b: f64 = 2.0 * vector::Vector::dot(&oc, &ray.direction);
-    let c: f64 = vector::Vector::dot(&oc, &oc) - radius * radius;
-    let discriminant: f64 = b * b - 4.0 * a * c;
-
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-1.0 * b - discriminant.sqrt()) / (2.0 * a)
+    match hit {
+        Some(record) => {
+            let res = 0.5
+                * vector::Vector::new(
+                    record.normal.a + 1.0,
+                    record.normal.b + 1.0,
+                    record.normal.c + 1.0,
+                );
+            return res;
+        }
+        None => {
+            let unit = r.direction.unit();
+            let t = (unit.b + 1.0) * 0.5;
+            let res = (1.0 - t) * vector::Vector::new(1.0, 1.0, 1.0)
+                + t * vector::Vector::new(0.5, 0.7, 1.0);
+            return res;
+        }
     }
-}
-
-fn color(r: &ray::Ray) -> vector::Vector {
-    let tt: f64 = hit_sphere(vector::Vector::new(0.0, 0.0, -1.0), 0.5, r);
-
-    if tt > 0.0 {
-        let u = r.point_at_parameter(tt) - vector::Vector::new(0.0, 0.0, -1.0);
-
-        let n = vector::Vector::unit(&u);
-        return 0.5 * vector::Vector::new(n.a + 1.0, n.b + 1.0, n.c + 1.0);
-    }
-
-    let unit_direction = vector::Vector::unit(&r.direction);
-    let t = 0.5 * (unit_direction.b + 1.0);
-
-    (1.0 - t) * vector::Vector::new(1.0, 1.0, 1.0) + t * vector::Vector::new(0.5, 0.7, 1.0)
 }
 
 fn main() {
@@ -44,6 +36,19 @@ fn main() {
     let vertical = vector::Vector::new(0.0, 2.0, 0.0);
     let origin = vector::Vector::new(0.0, 0.0, 0.0);
 
+    let ob: Vec<objects::Object> = vec![
+        objects::Object::Single(objects::Sphere::new(
+            vector::Vector::new(0.0, 0.0, -1.0),
+            0.5,
+        )),
+        objects::Object::Single(objects::Sphere::new(
+            vector::Vector::new(0.0, -100.5, -1.0),
+            100.0,
+        )),
+    ];
+
+    let world = objects::Object::Multiple(ob);
+
     for j in (0..ny).rev() {
         for i in 0..nx {
             let u = (i as f64) / (nx as f64);
@@ -51,7 +56,7 @@ fn main() {
 
             let r = ray::Ray::new(origin, lower_left_corner + u * horizontal + v * vertical);
 
-            let col = color(&r);
+            let col = color(&r, &world);
 
             let ir = (255.99 * col.a) as i32;
             let ig = (255.99 * col.b) as i32;
