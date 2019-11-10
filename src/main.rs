@@ -1,11 +1,14 @@
+mod hit;
 mod objects;
 mod ray;
+mod sphere;
 mod vector;
 
-use objects::Object::{Multiple, Single};
-use objects::Sphere;
+use hit::Hitable;
+use objects::World;
+use sphere::Sphere;
 
-fn color(r: &ray::Ray, world: &objects::Object) -> vector::Vector {
+fn color(r: &ray::Ray, world: &World<Hitable>) -> vector::Vector {
     let hit = world.hit(r, 0.0, std::f64::MAX);
 
     match hit {
@@ -39,12 +42,12 @@ fn main() {
     let vertical = vector::Vector::new(0.0, 2.0, 0.0);
     let origin = vector::Vector::new(0.0, 0.0, 0.0);
 
-    let objects: Vec<objects::Object> = vec![
-        Single(Sphere::new(vector::Vector::new(0.0, 0.0, -1.0), 0.5)),
-        Single(Sphere::new(vector::Vector::new(0.0, -100.5, -1.0), 100.0)),
+    let objects: Vec<World<T: Hitable>> = vec![
+        World::Single(Sphere::new(vector::Vector::new(0.0, 0.0, -1.0), 0.5)),
+        World::Single(Sphere::new(vector::Vector::new(0.0, -100.5, -1.0), 100.0)),
     ];
 
-    let world = Multiple(objects);
+    let world = World::Multiple(objects);
 
     for j in (0..ny).rev() {
         for i in 0..nx {
