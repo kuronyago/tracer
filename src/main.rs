@@ -1,17 +1,20 @@
+mod camera;
 mod objects;
 mod ray;
 mod vector;
 
+use camera::Camera;
 use objects::Object::{Multiple, Single};
 use objects::Sphere;
+use vector::Vector;
 
-fn color(r: &ray::Ray, world: &objects::Object) -> vector::Vector {
+fn color(r: &ray::Ray, world: &objects::Object) -> Vector {
     let hit = world.hit(r, 0.0, std::f64::MAX);
 
     match hit {
         Some(record) => {
             let res = 0.5
-                * vector::Vector::new(
+                * Vector::new(
                     record.normal.a + 1.0,
                     record.normal.b + 1.0,
                     record.normal.c + 1.0,
@@ -21,8 +24,7 @@ fn color(r: &ray::Ray, world: &objects::Object) -> vector::Vector {
         None => {
             let unit = r.direction.unit();
             let t = (unit.b + 1.0) * 0.5;
-            let res = (1.0 - t) * vector::Vector::new(1.0, 1.0, 1.0)
-                + t * vector::Vector::new(0.5, 0.7, 1.0);
+            let res = (1.0 - t) * Vector::new(1.0, 1.0, 1.0) + t * Vector::new(0.5, 0.7, 1.0);
             return res;
         }
     }
@@ -46,12 +48,14 @@ fn main() {
 
     let world = Multiple(objects);
 
+    let cam = Camera::new(origin, lower_left_corner, horizontal, vertical);
+
     for j in (0..ny).rev() {
         for i in 0..nx {
             let u = (i as f64) / (nx as f64);
             let v = (j as f64) / (ny as f64);
 
-            let r = ray::Ray::new(origin, lower_left_corner + u * horizontal + v * vertical);
+            let r = cam.get_ray(u, v);
 
             let col = color(&r, &world);
 
