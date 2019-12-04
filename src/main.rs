@@ -6,6 +6,7 @@ mod vector;
 use camera::Camera;
 use objects::Object::{Multiple, Single};
 use objects::Sphere;
+use rand::prelude::*;
 use vector::Vector;
 
 fn color(r: &ray::Ray, world: &objects::Object) -> Vector {
@@ -13,19 +14,30 @@ fn color(r: &ray::Ray, world: &objects::Object) -> Vector {
 
     match hit {
         Some(record) => {
-            let res = 0.5
-                * Vector::new(
-                    record.normal.a + 1.0,
-                    record.normal.b + 1.0,
-                    record.normal.c + 1.0,
-                );
-            return res;
+            let target: Vector = record.p + record.normal + random_in_unit_sphere();
+            let r_a: ray::Ray = ray::Ray::new(record.p, target - record.p);
+            return 0.5 * color(&r_a, world);
         }
         None => {
             let unit = r.direction.unit();
             let t = (unit.b + 1.0) * 0.5;
             let res = (1.0 - t) * Vector::new(1.0, 1.0, 1.0) + t * Vector::new(0.5, 0.7, 1.0);
             return res;
+        }
+    }
+}
+
+fn random_in_unit_sphere() -> Vector {
+    let mut rng = thread_rng();
+
+    let unit = Vector::new(1.0, 1.0, 1.0);
+
+    loop {
+        let p: Vector =
+            2.0 * Vector::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>()) - unit;
+
+        if p.squared_length() >= 1.0 {
+            return p;
         }
     }
 }
